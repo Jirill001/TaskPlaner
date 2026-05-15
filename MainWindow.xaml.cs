@@ -13,7 +13,7 @@ namespace TaskPlaner
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
-    /// </summary>
+    /// </summary>ы
     public partial class MainWindow : Window
     {
         public MainWindow()
