@@ -27,6 +27,7 @@ namespace TaskPlaner.ViewModels
 
 
         public List<KeyValuePair<string, Status>> FilterStatusesList { get; }
+        public ObservableCollection<TaskItem> Tasks => _projectService.Tasks;
         public MainViewModel(ProjectService projectService)
         {
             _projectService = projectService;
