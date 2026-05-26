@@ -25,6 +25,8 @@ namespace TaskPlaner.ViewModels
         private ICommand _loadCommand;
         private ICommand _autoScheduleCommand;
 
+
+        public List<KeyValuePair<string, Status>> FilterStatusesList { get; }
         public MainViewModel(ProjectService projectService)
         {
             _projectService = projectService;
@@ -32,6 +34,13 @@ namespace TaskPlaner.ViewModels
 
             _tasksView = CollectionViewSource.GetDefaultView(_projectService.Tasks);
             _tasksView.Filter = TaskFilter;
+            FilterStatusesList = new List<KeyValuePair<string, Status>>()
+            {
+                new KeyValuePair<string, Status>("Все", Status.Planned | Status.InProgress | Status.Completed),
+                new KeyValuePair<string, Status>("Планируется", Status.Planned),
+                new KeyValuePair<string, Status>("В работе", Status.InProgress),
+                new KeyValuePair<string, Status>("Завершена", Status.Completed)
+            };
         }
 
         public ICollectionView TasksView

@@ -8,6 +8,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using TaskPlaner.Models;
+using TaskPlaner.Services;
+using TaskPlaner.ViewModels;
 
 namespace TaskPlaner
 {
@@ -19,6 +22,10 @@ namespace TaskPlaner
         public MainWindow()
         {
             InitializeComponent();
+
+            var projectService = new ProjectService();
+            DataContext = new MainViewModel(projectService);
+
         }
     }
 }

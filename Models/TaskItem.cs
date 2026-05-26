@@ -80,8 +80,8 @@ namespace TaskPlaner.Models
 
     public enum Status
     {
-        Planned,
-        InProgress,
-        Completed
+        Planned = 1,
+        InProgress = 2,
+        Completed = 4
     }
 }
