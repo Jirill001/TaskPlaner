@@ -1,26 +1,18 @@
-﻿using System;
+﻿using TaskPlaner.Models;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Shapes;
 using TaskPlaner.Models;
 
 namespace TaskPlaner.Views
 {
-    /// <summary>
-    /// Логика взаимодействия для GanttChartView.xaml
-    /// </summary>
     public partial class GanttChartView : UserControl
     {
         public static readonly DependencyProperty TasksProperty =
@@ -38,17 +30,18 @@ namespace TaskPlaner.Views
         private const double TimelineHeaderHeight = 40.0;
         private const double HandleWidth = 6.0;
 
+        // Для Drag-and-Drop
         private List<Rectangle> _taskRectangles = new List<Rectangle>();
         private List<Rectangle> _leftHandles = new List<Rectangle>();
         private List<Rectangle> _rightHandles = new List<Rectangle>();
 
         private bool _isDragging = false;
-        private int _draggedTaskIndex = -1;
+        private TaskItem _draggedTask = null;          // сама задача, которую тянем
         private DragType _dragType = DragType.None;
         private Point _startMousePoint;
         private DateTime _originalStartDate;
         private DateTime _originalEndDate;
-        private DateTime _minDate;
+        private DateTime _minDate;                     // для пересчёта координат
         private Rectangle _draggedRect;
         private Rectangle _draggedLeftHandle;
         private Rectangle _draggedRightHandle;
@@ -84,7 +77,7 @@ namespace TaskPlaner.Views
             DrawGantt();
         }
 
-        private void DrawGantt()
+        public void DrawGantt()
         {
             GanttCanvas.Children.Clear();
             _taskRectangles.Clear();
@@ -94,11 +87,13 @@ namespace TaskPlaner.Views
             if (Tasks == null || Tasks.Count == 0)
                 return;
 
-            _minDate = Tasks.Min(t => t.StartDate).AddDays(-2);
-            DateTime maxDate = Tasks.Max(t => t.EndDate).AddDays(2);
+            var sortedTasks = Tasks.OrderBy(t => t.StartDate).ToList();
+
+            _minDate = sortedTasks.Min(t => t.StartDate).AddDays(-2);
+            DateTime maxDate = sortedTasks.Max(t => t.EndDate).AddDays(2);
             double totalDays = (maxDate - _minDate).TotalDays;
             double canvasWidth = totalDays * PixelsPerDay + 100;
-            double canvasHeight = Tasks.Count * TaskRowHeight + TimelineHeaderHeight + 20;
+            double canvasHeight = sortedTasks.Count * TaskRowHeight + TimelineHeaderHeight + 20;
 
             GanttCanvas.Width = canvasWidth;
             GanttCanvas.Height = canvasHeight;
@@ -129,8 +124,7 @@ namespace TaskPlaner.Views
                 GanttCanvas.Children.Add(dateLabel);
             }
 
-            // Горизонтальные линии строк
-            for (int i = 0; i < Tasks.Count; i++)
+            for (int i = 0; i < sortedTasks.Count; i++)
             {
                 double y = TimelineHeaderHeight + i * TaskRowHeight;
                 Line rowLine = new Line
@@ -145,10 +139,9 @@ namespace TaskPlaner.Views
                 GanttCanvas.Children.Add(rowLine);
             }
 
-            // Блоки задач
-            for (int i = 0; i < Tasks.Count; i++)
+            for (int i = 0; i < sortedTasks.Count; i++)
             {
-                TaskItem task = Tasks[i];
+                TaskItem task = sortedTasks[i];
                 double startX = (task.StartDate - _minDate).TotalDays * PixelsPerDay;
                 double endX = (task.EndDate - _minDate).TotalDays * PixelsPerDay;
                 double width = endX - startX;
@@ -157,7 +150,6 @@ namespace TaskPlaner.Views
                 double y = TimelineHeaderHeight + i * TaskRowHeight + 5;
                 double height = TaskRowHeight - 10;
 
-                // Основной прямоугольник задачи
                 Rectangle rect = new Rectangle
                 {
                     Width = width,
@@ -168,14 +160,14 @@ namespace TaskPlaner.Views
                     RadiusX = 3,
                     RadiusY = 3,
                     ToolTip = $"{task.Title}\n{task.StartDate:dd.MM.yyyy} - {task.EndDate:dd.MM.yyyy}\nПрогресс: {task.Progress}%",
-                    IsHitTestVisible = true
+                    IsHitTestVisible = true,
+                    Tag = task
                 };
                 Canvas.SetLeft(rect, startX);
                 Canvas.SetTop(rect, y);
                 GanttCanvas.Children.Add(rect);
                 _taskRectangles.Add(rect);
 
-                // Полоса прогресса
                 double progressWidth = width * task.Progress / 100.0;
                 if (progressWidth > 0)
                 {
@@ -193,7 +185,6 @@ namespace TaskPlaner.Views
                     GanttCanvas.Children.Add(progressRect);
                 }
 
-                // Текст названия задачи
                 TextBlock taskLabel = new TextBlock
                 {
                     Text = task.Title,
@@ -207,7 +198,6 @@ namespace TaskPlaner.Views
                 Canvas.SetTop(taskLabel, y + 2);
                 GanttCanvas.Children.Add(taskLabel);
 
-                // Левая ручка растягивания
                 Rectangle leftHandle = new Rectangle
                 {
                     Width = HandleWidth,
@@ -216,14 +206,14 @@ namespace TaskPlaner.Views
                     Stroke = Brushes.Gray,
                     StrokeThickness = 0.5,
                     Cursor = Cursors.SizeWE,
-                    IsHitTestVisible = true
+                    IsHitTestVisible = true,
+                    Tag = task
                 };
                 Canvas.SetLeft(leftHandle, startX - HandleWidth / 2);
                 Canvas.SetTop(leftHandle, y);
                 GanttCanvas.Children.Add(leftHandle);
                 _leftHandles.Add(leftHandle);
 
-                // Правая ручка
                 Rectangle rightHandle = new Rectangle
                 {
                     Width = HandleWidth,
@@ -232,7 +222,8 @@ namespace TaskPlaner.Views
                     Stroke = Brushes.Gray,
                     StrokeThickness = 0.5,
                     Cursor = Cursors.SizeWE,
-                    IsHitTestVisible = true
+                    IsHitTestVisible = true,
+                    Tag = task
                 };
                 Canvas.SetLeft(rightHandle, endX - HandleWidth / 2);
                 Canvas.SetTop(rightHandle, y);
@@ -260,46 +251,49 @@ namespace TaskPlaner.Views
             var hitElement = GanttCanvas.InputHitTest(mousePos) as Rectangle;
             if (hitElement == null) return;
 
-            // Определяем, по чему кликнули
+            // Определяем тип перетаскивания по элементу и извлекаем задачу из Tag
             int index = _taskRectangles.IndexOf(hitElement);
             if (index >= 0)
             {
-                StartDrag(index, DragType.Move, mousePos);
+                var task = (TaskItem)_taskRectangles[index].Tag;
+                StartDrag(task, index, DragType.Move, mousePos);
                 return;
             }
             index = _leftHandles.IndexOf(hitElement);
             if (index >= 0)
             {
-                StartDrag(index, DragType.ResizeLeft, mousePos);
+                var task = (TaskItem)_leftHandles[index].Tag;
+                StartDrag(task, index, DragType.ResizeLeft, mousePos);
                 return;
             }
             index = _rightHandles.IndexOf(hitElement);
             if (index >= 0)
             {
-                StartDrag(index, DragType.ResizeRight, mousePos);
+                var task = (TaskItem)_rightHandles[index].Tag;
+                StartDrag(task, index, DragType.ResizeRight, mousePos);
                 return;
             }
         }
 
-        private void StartDrag(int index, DragType type, Point mousePos)
+        private void StartDrag(TaskItem task, int visualIndex, DragType type, Point mousePos)
         {
             _isDragging = true;
-            _draggedTaskIndex = index;
+            _draggedTask = task;
             _dragType = type;
             _startMousePoint = mousePos;
-            _originalStartDate = Tasks[index].StartDate;
-            _originalEndDate = Tasks[index].EndDate;
+            _originalStartDate = task.StartDate;
+            _originalEndDate = task.EndDate;
 
-            _draggedRect = _taskRectangles[index];
-            _draggedLeftHandle = _leftHandles[index];
-            _draggedRightHandle = _rightHandles[index];
+            _draggedRect = _taskRectangles[visualIndex];
+            _draggedLeftHandle = _leftHandles[visualIndex];
+            _draggedRightHandle = _rightHandles[visualIndex];
 
             GanttCanvas.CaptureMouse();
         }
 
         private void GanttCanvas_MouseMove(object sender, MouseEventArgs e)
         {
-            if (!_isDragging || _draggedTaskIndex < 0) return;
+            if (!_isDragging || _draggedTask == null) return;
 
             Point currentPos = e.GetPosition(GanttCanvas);
             double deltaX = currentPos.X - _startMousePoint.X;
@@ -315,15 +309,14 @@ namespace TaskPlaner.Views
                     break;
                 case DragType.ResizeLeft:
                     newStart = _originalStartDate.AddDays(deltaDays);
-                    if (newStart > _originalEndDate) newStart = _originalEndDate.AddDays(-1);
+                    if (newStart >= _originalEndDate) newStart = _originalEndDate.AddDays(-1);
                     break;
                 case DragType.ResizeRight:
                     newEnd = _originalEndDate.AddDays(deltaDays);
-                    if (newEnd < _originalStartDate) newEnd = _originalStartDate.AddDays(1);
+                    if (newEnd <= _originalStartDate) newEnd = _originalStartDate.AddDays(1);
                     break;
             }
 
-            // Обновляем визуально позиции и размеры временно
             double newStartX = (newStart - _minDate).TotalDays * PixelsPerDay;
             double newEndX = (newEnd - _minDate).TotalDays * PixelsPerDay;
             double newWidth = newEndX - newStartX;
@@ -337,36 +330,32 @@ namespace TaskPlaner.Views
 
         private void GanttCanvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (!_isDragging) return;
+            if (!_isDragging || _draggedTask == null) return;
             _isDragging = false;
             GanttCanvas.ReleaseMouseCapture();
 
-            if (_draggedTaskIndex < 0) return;
-
-            // Применяем изменения к модели
             Point currentPos = e.GetPosition(GanttCanvas);
             double deltaDays = (currentPos.X - _startMousePoint.X) / PixelsPerDay;
-            TaskItem task = Tasks[_draggedTaskIndex];
 
             switch (_dragType)
             {
                 case DragType.Move:
-                    task.StartDate = _originalStartDate.AddDays(deltaDays);
-                    task.EndDate = _originalEndDate.AddDays(deltaDays);
+                    _draggedTask.StartDate = _originalStartDate.AddDays(deltaDays);
+                    _draggedTask.EndDate = _originalEndDate.AddDays(deltaDays);
                     break;
                 case DragType.ResizeLeft:
                     DateTime newStart = _originalStartDate.AddDays(deltaDays);
-                    if (newStart > task.EndDate) newStart = task.EndDate.AddDays(-1);
-                    task.StartDate = newStart;
+                    if (newStart >= _draggedTask.EndDate) newStart = _draggedTask.EndDate.AddDays(-1);
+                    _draggedTask.StartDate = newStart;
                     break;
                 case DragType.ResizeRight:
                     DateTime newEnd = _originalEndDate.AddDays(deltaDays);
-                    if (newEnd < task.StartDate) newEnd = task.StartDate.AddDays(1);
-                    task.EndDate = newEnd;
+                    if (newEnd <= _draggedTask.StartDate) newEnd = _draggedTask.StartDate.AddDays(1);
+                    _draggedTask.EndDate = newEnd;
                     break;
             }
 
-            // Полная перерисовка диаграммы
+            _draggedTask = null;
             DrawGantt();
         }
 
@@ -376,8 +365,16 @@ namespace TaskPlaner.Views
             {
                 _isDragging = false;
                 GanttCanvas.ReleaseMouseCapture();
-                DrawGantt(); // откат к исходным позициям
+                _draggedTask = null;
+                DrawGantt();
             }
+        }
+        private bool _sortByDate = false;
+        public void SortTasksByDate()
+        {
+            _sortByDate = true;
+            DrawGantt();
+            _sortByDate = false;
         }
     }
 }

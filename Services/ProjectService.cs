@@ -118,5 +118,65 @@ namespace TaskPlaner.Services
             string currentJson = JsonSerializer.Serialize(_tasks);
             return !string.Equals(existingJson, currentJson);
         }
+        public void AutoSchedule()
+        {
+            if (_tasks == null || _tasks.Count == 0) return;
+
+            var sorted = new List<TaskItem>();
+            var visited = new HashSet<string>();
+            var stack = new Stack<TaskItem>();
+
+            foreach (var task in _tasks)
+            {
+                if (!visited.Contains(task.Id))
+                    TopologicalSort(task, visited, stack);
+            }
+
+            while (stack.Count > 0)
+                sorted.Add(stack.Pop());
+
+            Dictionary<string, DateTime> endDates = new Dictionary<string, DateTime>();
+            DateTime previousEnd = DateTime.MinValue;
+
+            foreach (var task in sorted)
+            {
+                TimeSpan originalDuration = task.EndDate - task.StartDate;
+
+                DateTime maxPredecessorEnd = DateTime.MinValue;
+                if (task.PredecessorIds != null)
+                {
+                    foreach (var predId in task.PredecessorIds)
+                    {
+                        if (endDates.TryGetValue(predId, out DateTime predEnd) && predEnd > maxPredecessorEnd)
+                            maxPredecessorEnd = predEnd;
+                    }
+                }
+
+                DateTime newStart = maxPredecessorEnd > DateTime.MinValue ? maxPredecessorEnd.AddDays(1) : task.StartDate;
+                if (previousEnd > DateTime.MinValue && newStart <= previousEnd)
+                    newStart = previousEnd.AddDays(1);
+
+                task.StartDate = newStart.Date;
+                task.EndDate = newStart.Date.Add(originalDuration);
+
+                endDates[task.Id] = task.EndDate;
+                previousEnd = task.EndDate;
+            }
+        }
+
+        private void TopologicalSort(TaskItem task, HashSet<string> visited, Stack<TaskItem> stack)
+        {
+            visited.Add(task.Id);
+            if (task.PredecessorIds != null)
+            {
+                foreach (var predId in task.PredecessorIds)
+                {
+                    var predecessor = _tasks.FirstOrDefault(t => t.Id == predId);
+                    if (predecessor != null && !visited.Contains(predId))
+                        TopologicalSort(predecessor, visited, stack);
+                }
+            }
+            stack.Push(task);
+        }
     }
 }

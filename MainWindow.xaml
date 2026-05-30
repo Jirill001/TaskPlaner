@@ -50,6 +50,7 @@
         <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" 
                       Background="Gray" ResizeBehavior="PreviousAndNext"/>
 
-        <views:GanttChartView Grid.Column="2" Tasks="{Binding Tasks}" Margin="10"/>
+        <views:GanttChartView x:Name="ganttChartView" Grid.Column="2" Tasks="{Binding Tasks}" Margin="10"/>
+        
     </Grid>
 </Window>

@@ -218,9 +218,12 @@ namespace TaskPlaner.ViewModels
             }
         }
 
+        public event Action TasksRescheduled;
+
         private void AutoSchedule(object parameter)
         {
-            
+            _projectService.AutoSchedule();
+            TasksRescheduled?.Invoke();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

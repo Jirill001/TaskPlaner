@@ -11,12 +11,13 @@ using System.Windows.Shapes;
 using TaskPlaner.Models;
 using TaskPlaner.Services;
 using TaskPlaner.ViewModels;
+using TaskPlaner.Views;
 
 namespace TaskPlaner
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
-    /// </summary>ы
+    /// </summary>
     public partial class MainWindow : Window
     {
         public MainWindow()
@@ -25,6 +26,12 @@ namespace TaskPlaner
 
             var projectService = new ProjectService();
             DataContext = new MainViewModel(projectService);
+
+            var vm = DataContext as MainViewModel;
+            if (vm != null)
+            {
+                vm.TasksRescheduled += () => ganttChartView.DrawGantt();
+            }
 
         }
     }
