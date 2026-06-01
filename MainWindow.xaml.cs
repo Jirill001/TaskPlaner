@@ -38,17 +38,26 @@ namespace TaskPlaner
                 vm.TasksRescheduled += () => ganttChartView.DrawGantt();
             }
         }
-            private void ExportPdf_Click(object sender, RoutedEventArgs e)
+        private void ExportPdf_Click(object sender, RoutedEventArgs e)
         {
-            var ganttView = ganttChartView as FrameworkElement;
+            var ganttView = ganttChartView as GanttChartView;
             if (ganttView == null) return;
 
-            var bitmap = new RenderTargetBitmap(
-                (int)ganttView.ActualWidth,
-                (int)ganttView.ActualHeight,
+            var canvas = ganttView.DiagramCanvas;
+            if (canvas == null) return;
+
+            // Принудительная компоновка Canvas, чтобы гарантировать его содержимое
+            canvas.Measure(new Size(canvas.Width, canvas.Height));
+            canvas.Arrange(new Rect(0, 0, canvas.Width, canvas.Height));
+            canvas.UpdateLayout();
+
+            // Рендер всего холста (включая невидимую часть)
+            RenderTargetBitmap bitmap = new RenderTargetBitmap(
+                (int)canvas.ActualWidth,
+                (int)canvas.ActualHeight,
                 96, 96,
                 PixelFormats.Pbgra32);
-            bitmap.Render(ganttView);
+            bitmap.Render(canvas);
 
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(bitmap));
@@ -57,7 +66,7 @@ namespace TaskPlaner
                 encoder.Save(ms);
                 ms.Position = 0;
 
-                var dlg = new SaveFileDialog
+                SaveFileDialog dlg = new SaveFileDialog
                 {
                     Filter = "PDF files (*.pdf)|*.pdf",
                     DefaultExt = ".pdf"
@@ -66,8 +75,8 @@ namespace TaskPlaner
                 {
                     var document = new PdfDocument();
                     var page = document.AddPage();
-                    page.Width = (int)ganttView.ActualWidth;
-                    page.Height = (int)ganttView.ActualHeight;
+                    page.Width = canvas.ActualWidth;
+                    page.Height = canvas.ActualHeight;
 
                     var gfx = XGraphics.FromPdfPage(page);
                     var image = XImage.FromStream(() => ms);
@@ -78,5 +87,4 @@ namespace TaskPlaner
             }
         }
     }
-    
 }

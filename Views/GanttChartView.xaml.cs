@@ -45,6 +45,7 @@ namespace TaskPlaner.Views
         private Rectangle _draggedRect;
         private Rectangle _draggedLeftHandle;
         private Rectangle _draggedRightHandle;
+        public Canvas DiagramCanvas => GanttCanvas;
 
         private enum DragType { None, Move, ResizeLeft, ResizeRight }
 
