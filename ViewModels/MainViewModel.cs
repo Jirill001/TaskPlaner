@@ -11,7 +11,11 @@ using System.Windows.Input;
 using TaskPlaner.Models;
 using TaskPlaner.Services;
 using TaskPlaner.Views;
-using System.ComponentModel;
+using System.IO;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using PdfSharpCore.Drawing;
+using PdfSharpCore.Pdf;
 
 namespace TaskPlaner.ViewModels
 {

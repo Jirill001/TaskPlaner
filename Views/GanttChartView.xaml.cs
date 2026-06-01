@@ -1,5 +1,4 @@
-﻿using TaskPlaner.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -8,7 +7,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using TaskPlaner.Models;
 using TaskPlaner.Models;
 
 namespace TaskPlaner.Views
@@ -381,5 +382,19 @@ namespace TaskPlaner.Views
             DrawGantt();
             _sortByDate = false;
         }
+
+        public System.Windows.Media.Imaging.BitmapSource CaptureCanvas()
+        {
+            if (GanttCanvas.ActualWidth == 0 || GanttCanvas.ActualHeight == 0)
+                return null;
+
+            RenderTargetBitmap renderBitmap = new RenderTargetBitmap(
+                (int)GanttCanvas.ActualWidth,
+                (int)GanttCanvas.ActualHeight,
+                96, 96, PixelFormats.Pbgra32);
+            renderBitmap.Render(GanttCanvas);
+            return renderBitmap;
+        }
+
     }
 }

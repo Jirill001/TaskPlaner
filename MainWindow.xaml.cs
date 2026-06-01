@@ -12,6 +12,11 @@ using TaskPlaner.Models;
 using TaskPlaner.Services;
 using TaskPlaner.ViewModels;
 using TaskPlaner.Views;
+using System.IO;
+using Microsoft.Win32;
+using PdfSharpCore.Drawing;
+using PdfSharpCore.Pdf;
+
 
 namespace TaskPlaner
 {
@@ -32,7 +37,46 @@ namespace TaskPlaner
             {
                 vm.TasksRescheduled += () => ganttChartView.DrawGantt();
             }
+        }
+            private void ExportPdf_Click(object sender, RoutedEventArgs e)
+        {
+            var ganttView = ganttChartView as FrameworkElement;
+            if (ganttView == null) return;
 
+            var bitmap = new RenderTargetBitmap(
+                (int)ganttView.ActualWidth,
+                (int)ganttView.ActualHeight,
+                96, 96,
+                PixelFormats.Pbgra32);
+            bitmap.Render(ganttView);
+
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(bitmap));
+            using (var ms = new MemoryStream())
+            {
+                encoder.Save(ms);
+                ms.Position = 0;
+
+                var dlg = new SaveFileDialog
+                {
+                    Filter = "PDF files (*.pdf)|*.pdf",
+                    DefaultExt = ".pdf"
+                };
+                if (dlg.ShowDialog() == true)
+                {
+                    var document = new PdfDocument();
+                    var page = document.AddPage();
+                    page.Width = (int)ganttView.ActualWidth;
+                    page.Height = (int)ganttView.ActualHeight;
+
+                    var gfx = XGraphics.FromPdfPage(page);
+                    var image = XImage.FromStream(() => ms);
+                    gfx.DrawImage(image, 0, 0, page.Width, page.Height);
+
+                    document.Save(dlg.FileName);
+                }
+            }
         }
     }
+    
 }
