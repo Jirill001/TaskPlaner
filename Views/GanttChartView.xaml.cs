@@ -67,9 +67,13 @@ namespace TaskPlaner.Views
         private void OnTasksCollectionChanged(ObservableCollection<TaskItem> oldCollection, ObservableCollection<TaskItem> newCollection)
         {
             if (oldCollection != null)
+            {
                 oldCollection.CollectionChanged -= Tasks_CollectionChanged;
+            }
             if (newCollection != null)
+            {
                 newCollection.CollectionChanged += Tasks_CollectionChanged;
+            }
             DrawGantt();
         }
 
@@ -85,8 +89,7 @@ namespace TaskPlaner.Views
             _leftHandles.Clear();
             _rightHandles.Clear();
 
-            if (Tasks == null || Tasks.Count == 0)
-                return;
+            if (Tasks == null || Tasks.Count == 0) return;
 
             var sortedTasks = Tasks.OrderBy(t => t.StartDate).ToList();
 

@@ -78,9 +78,13 @@ namespace TaskPlaner.Views
             ProgressSlider.Value = _task.Progress;
             var selectedColor = _colorList.FirstOrDefault(c => c.Value == _task.CustomColor);
             if (selectedColor.Key != null)
+            {
                 ColorComboBox.SelectedItem = selectedColor;
+            }
             else
+            {
                 ColorComboBox.SelectedIndex = 0;
+            }
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)

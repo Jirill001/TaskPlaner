@@ -28,6 +28,7 @@ namespace TaskPlaner
         public MainWindow()
         {
             InitializeComponent();
+            Closing += MainWindow_Closing;
 
             var projectService = new ProjectService();
             DataContext = new MainViewModel(projectService);
@@ -38,6 +39,20 @@ namespace TaskPlaner
                 vm.TasksRescheduled += () => ganttChartView.DrawGantt();
             }
         }
+        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            MessageBoxResult result = MessageBox.Show(
+                "Вы уверены, что хотите выйти?\n" +
+                "Не сохранёные данные будут утеряны",
+                "Подтверждение выхода",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.No)
+            {
+                e.Cancel = true;
+            }
+        }
         private void ExportPdf_Click(object sender, RoutedEventArgs e)
         {
             var ganttView = ganttChartView as GanttChartView;
@@ -46,12 +61,10 @@ namespace TaskPlaner
             var canvas = ganttView.DiagramCanvas;
             if (canvas == null) return;
 
-            // Принудительная компоновка Canvas, чтобы гарантировать его содержимое
             canvas.Measure(new Size(canvas.Width, canvas.Height));
             canvas.Arrange(new Rect(0, 0, canvas.Width, canvas.Height));
             canvas.UpdateLayout();
 
-            // Рендер всего холста (включая невидимую часть)
             RenderTargetBitmap bitmap = new RenderTargetBitmap(
                 (int)canvas.ActualWidth,
                 (int)canvas.ActualHeight,

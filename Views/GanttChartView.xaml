@@ -10,7 +10,11 @@
                   VerticalScrollBarVisibility="Auto"
                   CanContentScroll="False">
         <Grid>
-            <Canvas x:Name="GanttCanvas" Background="White"/>
+            <Canvas x:Name="GanttCanvas">
+                <Canvas.Background>
+                    <ImageBrush/>
+                </Canvas.Background>
+            </Canvas>
         </Grid>
     </ScrollViewer>
 </UserControl>
