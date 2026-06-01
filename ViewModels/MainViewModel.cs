@@ -1,14 +1,17 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
-using Microsoft.Win32;
 using TaskPlaner.Models;
 using TaskPlaner.Services;
+using TaskPlaner.Views;
+using System.ComponentModel;
 
 namespace TaskPlaner.ViewModels
 {
@@ -35,6 +38,16 @@ namespace TaskPlaner.ViewModels
 
             _tasksView = CollectionViewSource.GetDefaultView(_projectService.Tasks);
             _tasksView.Filter = TaskFilter;
+            _tasksView.SortDescriptions.Add(new SortDescription("StartDate", ListSortDirection.Ascending));
+            _tasksView.SortDescriptions.Add(new SortDescription("Priority", ListSortDirection.Descending));
+            _tasksView.SortDescriptions.Add(new SortDescription("CreatedAt", ListSortDirection.Ascending));
+            if (_tasksView is ICollectionViewLiveShaping liveView)
+            {
+                liveView.LiveSortingProperties.Add("StartDate");
+                liveView.LiveSortingProperties.Add("Priority");
+                liveView.IsLiveSorting = true;
+            }
+
             FilterStatusesList = new List<KeyValuePair<string, Status>>()
             {
                 new KeyValuePair<string, Status>("Все", Status.Planned | Status.InProgress | Status.Completed),
@@ -153,28 +166,26 @@ namespace TaskPlaner.ViewModels
 
         private void AddTask(object parameter)
         {
-            var newTask = new TaskItem
+            var dialog = new TaskEditDialog();
+            dialog.Owner = Application.Current.MainWindow;
+            if (dialog.ShowDialog() == true)
             {
-                Title = "Новая задача",
-                StartDate = DateTime.Today,
-                EndDate = DateTime.Today.AddDays(5),
-                Priority = Priority.Medium,
-                Status = Status.Planned,
-                Progress = 0,
-                PredecessorIds = new List<string>()
-            };
-            _projectService.AddTask(newTask);
-            SelectedTask = newTask;
+                var newTask = dialog.EditedTask;
+                _projectService.AddTask(newTask);
+                SelectedTask = newTask;
+            }
         }
 
         private void EditTask(object parameter)
         {
-            if (SelectedTask == null)
-            {
-                return;
-            }
+            if (SelectedTask == null) return;
 
-            _projectService.UpdateTask(SelectedTask);
+            var dialog = new TaskEditDialog(SelectedTask);
+            dialog.Owner = Application.Current.MainWindow;
+            if (dialog.ShowDialog() == true)
+            {
+                _projectService.UpdateTask(SelectedTask);
+            }
         }
 
         private bool CanEditDeleteTask(object parameter)

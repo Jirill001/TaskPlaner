@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Media;
 using System.Runtime.CompilerServices;
+using System.Windows.Media;
 
 namespace TaskPlaner.Models
 {
@@ -16,6 +18,9 @@ namespace TaskPlaner.Models
         private Status _status;
         private int _progress;
         private List<string> _predecessorIds;
+        private string _taskColorString;
+        private DateTime _createdAt;
+        private Color? _customColor;
 
         public string Id
         {
@@ -61,6 +66,22 @@ namespace TaskPlaner.Models
         {
             get => _predecessorIds;
             set { _predecessorIds = value; OnPropertyChanged(); }
+        }
+        public string TaskColorString
+        {
+            get => _taskColorString;
+            set { _taskColorString = value; OnPropertyChanged(); }
+        }
+        public DateTime CreatedAt
+        {
+            get => _createdAt;
+            set { _createdAt = value; OnPropertyChanged(); }
+        }
+
+        public Color? CustomColor
+        {
+            get => _customColor;
+            set { _customColor = value; OnPropertyChanged(); }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

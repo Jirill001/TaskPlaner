@@ -30,18 +30,17 @@ namespace TaskPlaner.Views
         private const double TimelineHeaderHeight = 40.0;
         private const double HandleWidth = 6.0;
 
-        // Для Drag-and-Drop
         private List<Rectangle> _taskRectangles = new List<Rectangle>();
         private List<Rectangle> _leftHandles = new List<Rectangle>();
         private List<Rectangle> _rightHandles = new List<Rectangle>();
 
         private bool _isDragging = false;
-        private TaskItem _draggedTask = null;          // сама задача, которую тянем
+        private TaskItem _draggedTask = null;
         private DragType _dragType = DragType.None;
         private Point _startMousePoint;
         private DateTime _originalStartDate;
         private DateTime _originalEndDate;
-        private DateTime _minDate;                     // для пересчёта координат
+        private DateTime _minDate;
         private Rectangle _draggedRect;
         private Rectangle _draggedLeftHandle;
         private Rectangle _draggedRightHandle;
@@ -154,7 +153,7 @@ namespace TaskPlaner.Views
                 {
                     Width = width,
                     Height = height,
-                    Fill = GetBrushByPriority(task.Priority),
+                    Fill = GetTaskFill(task),
                     Stroke = Brushes.DarkGray,
                     StrokeThickness = 1,
                     RadiusX = 3,
@@ -234,6 +233,7 @@ namespace TaskPlaner.Views
 
         private Brush GetBrushByPriority(Priority priority)
         {
+
             return priority switch
             {
                 Priority.High => new SolidColorBrush(Color.FromRgb(255, 180, 180)),
@@ -241,6 +241,12 @@ namespace TaskPlaner.Views
                 Priority.Low => new SolidColorBrush(Color.FromRgb(200, 255, 200)),
                 _ => Brushes.LightGray
             };
+        }
+        private Brush GetTaskFill(TaskItem task)
+        {
+            if (task.CustomColor.HasValue)
+                return new SolidColorBrush(task.CustomColor.Value);
+            return GetBrushByPriority(task.Priority);
         }
 
         private void GanttCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -251,7 +257,6 @@ namespace TaskPlaner.Views
             var hitElement = GanttCanvas.InputHitTest(mousePos) as Rectangle;
             if (hitElement == null) return;
 
-            // Определяем тип перетаскивания по элементу и извлекаем задачу из Tag
             int index = _taskRectangles.IndexOf(hitElement);
             if (index >= 0)
             {
